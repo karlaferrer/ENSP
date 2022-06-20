@@ -1,0 +1,228 @@
+---
+title: "Trabalho de  Estatística"
+author: "Karla Ferreira"
+date: "`r Sys.Date()`"
+output: word_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE) # sem R codes
+```
+
+## Trabalho de Estatística
+
+Trabalho de Estatística
+
+
+```{r}
+#leitura do banco
+library(DescTools) 
+library(readxl)
+df <- read_xlsx("dados_brutos_2022.xlsx", col_types = "text")
+```
+
+```{r}
+#subset variaveis sociodemograficas e bloco padrao alimentar - df2
+myvars <- paste("A", 1:14, sep="")
+myvars2<-paste("D", c(2,4,6,8,10,12,14,15,16,17), sep="")
+myvars3 <- paste("B", 1:2, sep="")
+df2 <- cbind(df[myvars], df[myvars2],df[myvars3])
+#retirar algumas colunas
+df2<- subset(df2, select = -c(A5,A10, A12, A8))  
+```
+
+```{r}
+#transformar variaveis sociodemograficas
+#retirar categoria outro para sexo
+df2$A2 <- as.factor(df2$A2)
+levels(df2$A2)
+levels(df2$A2)[3] <- NA
+Freq(df2$A2, useNA = "always")
+
+#retirar categoria outro para sexo
+df2$A3 <- as.factor(df2$A3)
+levels(df2$A3)
+levels(df2$A3)[6] <- NA
+Freq(df2$A3, useNA = "always")
+
+#Uf em regioes
+library(DescTools) 
+df2$A4 <- as.factor(df2$A4)
+df2$regiao <- Recode(df2$A4,
+              "Norte" = c("AC","AM","AP","PA","RR"),
+              "Nordeste" = c("AL","BA","CE","MA","PB","PE","PI","RN"),
+              "Sudeste" = c("ES","MG","RJ","SP"),
+              "Sul" = c("PR","RS","SC"),
+              "Centro-Oeste" = c("GO","DF","MT","MS"),
+              elselevel = NA
+              )
+
+#estado civil - casado sim nao
+df2$A6 <- as.factor(df2$A6)
+levels(df2$A6)
+levels(df2$A2)[4] <- NA
+df2$A6 <- ifelse(df2$A6=="Casado(a) ou união estável ou morando junto", "Sim","Não")
+Freq(df2$A6, useNA = "always")
+
+#escolaridade - superior sim não
+df2$A7 <- as.factor(df2$A7)
+levels(df2$A7)
+levels(df2$A2)[7] <- NA
+df2$A7 <- ifelse(df2$A7=="Ensino Superior completo", "Sim","Não")
+df2$A72<-df2$A7
+Freq(df2$A7)
+
+#pessoas no domicilio
+df2$A9 <- as.numeric(df2$A9)
+summary(df2$A9)
+
+#ocupacao - retirar falta de informacao
+df2$A11 <- as.factor(df2$A11)
+levels(df2$A11)
+levels(df2$A11)[9] <- NA
+Freq(df2$A11)
+
+#renda - retirar falta de informacao
+df2$A13 <- as.factor(df2$A13)
+levels(df2$A13)
+levels(df2$A13)[6] <- NA
+Freq(df2$A13)
+
+#auxilio emergencial - retirar falta de informacao
+df2$A14 <- as.factor(df2$A14)
+levels(df2$A14)
+levels(df2$A14)[2] <- NA
+Freq(df2$A14)
+
+```
+
+
+## Estatísticas sumárias para idade
+```{r}  
+#summary idade
+df2$A1 <- as.numeric(df2$A1)  # transformando em numero
+summary(df2$A1)
+boxplot(df2$A1)
+```
+
+## Frequencia por faixa etária
+```{r}
+# Faixa etaria
+df2$fetaria <- cut(df2$A1, breaks = c(18, 29, 39, 49, 60, 100), right = FALSE)
+
+# tabela de frequencia
+Freq(df2$fetaria, useNA = "always")
+```
+
+## Frequência para piora no estado de saúde 
+```{r}
+
+#B1 estado de saude antes
+df2$B1 <- as.factor(df2$B1)
+#Freq(df2$B1, useNA = "always")
+
+# vamos criar uma variavel com duas categorias? 
+df2$estado.saude.antes <- Recode(df2$B1,
+                               "bom" = c("Bom", "Muito bom"),
+                               "regular ou ruim" = c("Regular", "Muito ruim", "Ruim"))
+#Freq(df2$estado.saude.antes, useNA = "always")
+#Freq(df2$estado.saude.antes) #obter frequencias sem NAs
+
+# ++++++++++++++++++++++++++++++++++++++++++++++++++
+#B2 estado de saude agora
+df2$B2 <- as.factor(df2$B2)
+levels(df2$B2)[4] <- NA
+#Freq(df2$B2, useNA = "always")
+
+# vamos criar uma variavel com duas categorias? 
+df2$estado.saude.agora <- Recode(df2$B2,
+                               "bom" = c("Bom", "Muito bom"),
+                               "regular ou ruim" = c("Regular", "Muito ruim", "Ruim"))
+#Freq(df2$estado.saude.antes, useNA = "always")
+
+# mudanca de status de auto-percepcao saude
+df2$piorou.saude <- ifelse(df2$estado.saude.antes == "bom" & df2$estado.saude.agora == "regular ou ruim", "piorou", "igual")
+Freq(df2$piorou.saude, useNA = "always")
+```
+
+## Frequencia para escolaridade
+```{r}
+# A7 escolaridade ----
+df2$A7 <- as.factor(df2$A7)
+levels(df2$A7)
+# transformando "Prefiro nao informar em NA"
+levels(df2$A7)[7] <- NA
+# vamos colocar em ordem, da menor para a maior escolaridade : VARIÁVEL ORDINAL
+Freq(df2$A7, useNA = "always")
+df2$A7 <- ordered(df2$A7, levels = c("Ensino Fundamental incompleto", "Ensino Fundamental completo",
+                                 "Ensino Médio incompleto", "Ensino Medio completo",
+                                 "Ensino Superior incompleto", "Ensino Superior completo"))
+Freq(df2$A7, useNA = "always")
+```
+
+## Tabela 1 
+```{r}
+#Tabela 1 - sociodemograficas
+#install.packages("tableone")
+library(tableone)
+# Selecionando as variaveis que irao compor a tabela
+Varstab <- c("A2", "A3", "fetaria")
+## criando o objeto da TableOne
+tabela1<-CreateTableOne(vars = Varstab, strata = "piorou.saude",data = df2)
+print(tabela1, showAllLevels = TRUE)
+```
+
+```{r}
+#Rótulo das variaveis na tabela 1
+library(MatchIt) 
+library(htmlTable)
+library(lessR)
+library(table1)
+library(flextable) # para formatar a tabela
+label(df2$A1) <- "Idade"
+label(df2$A2) <- "Sexo" # funcao label da table1
+label(df2$A3) <- "Raça/Cor"
+label(df2$regiao) <- "Região"
+label(df2$A6) <- "Casado(a)"
+label(df2$A72) <- "Nível Superior"
+label(df2$A9) <- "N. de pessoas no domicílio"
+label(df2$A11) <- "Ocupação"
+label(df2$A13) <- "Faixa de Renda"
+label(df2$A14) <- "Recebeu auxílio emergencial?"
+#label(df2$fetaria) <- "Faixa etária"
+```
+
+```{r}
+pvalue <- function(x, ...) {
+    # Construct vectors of data y, and groups (strata) g
+    y <- unlist(x)
+    g <- factor(rep(1:length(x), times=sapply(x, length)))
+    if (is.numeric(y)) {
+        # For numeric variables, perform a standard 2-sample t-test
+        p <- t.test(y ~ g)$p.value
+    } else {
+        # For categorical variables, perform a chi-squared test of independence
+        p <- chisq.test(table(y, g))$p.value
+    }
+    # Format the p-value, using an HTML entity for the less-than sign.
+    # The initial empty string places the output on the line below the variable label.
+    c("", sub("<", "&lt;", format.pval(p, digits=3, eps=0.001)))
+}
+```
+
+```{r}
+#create table 1 with p value
+table1(~ A1 + A2 + A3 + regiao + A6 + A72 + A9 + A11 + A13 + A14 | piorou.saude,
+    data=df2, overall=F , extra.col=list(`P-value`=pvalue))
+```
+
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r}
+plot(pressure)
+```
+
+

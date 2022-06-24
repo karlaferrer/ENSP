@@ -1,5 +1,5 @@
 ---
-title: "Trabalho de  Estatística"
+title: "Outputs - Trabalho de Estatística"
 author: "Karla Ferreira"
 date: "`r Sys.Date()`"
 output: word_document
@@ -11,8 +11,22 @@ knitr::opts_chunk$set(echo = FALSE) # sem R codes
 
 ## Trabalho de Estatística
 
-Trabalho de Estatística
+Objetivo geral:
 
+ -Caracterizar a autopercepção de saúde de adultos
+brasileiros durante a pandemia e sua relação com o parão de consumo alimentar.
+
+Objetivos específicos:
+
+-Realizar uma análise exploratória (descritiva) dos dados segundo suas variáveis sócio-demográficas e aquelas relacionadas à autopercepção de saúde e ao padrão de consumo alimentar.
+
+-Realizar as análises de inferência estatística para que seja possível responder os objetivos propostos do trabalho.
+
+-Avaliar a associação entre a piora de autopercepção de saúde em 2022 e o consumo frequente de alimentos ultraprocessados (marcador de alimentação não saudável). 
+
+-Avaliar a associação entre a piora de autopercepção de saúde em 2022 e o consumo frequente de frutas, legumes e verduras (marcador de alimentação saudável).
+
+-Avaliar a associação entre a piora de autopercepção de saúde em 2022 e as possíveis mudanças no padrão de consumo alimentar com a pandemia de COVID-19.
 
 ```{r}
 #leitura do banco
@@ -21,7 +35,7 @@ library(readxl)
 df <- read_xlsx("dados_brutos_2022.xlsx", col_types = "text")
 ```
 
-```{r}
+```{r, include = FALSE}
 #subset variaveis sociodemograficas e bloco padrao alimentar - df2
 myvars <- paste("A", 1:14, sep="")
 myvars2<-paste("D", c(2,4,6,8,10,12,14,15,16,17), sep="")
@@ -31,15 +45,16 @@ df2 <- cbind(df[myvars], df[myvars2],df[myvars3])
 df2<- subset(df2, select = -c(A5,A10, A12, A8))  
 ```
 
-```{r}
+```{r, include = FALSE}
 #transformar variaveis sociodemograficas
+
 #retirar categoria outro para sexo
 df2$A2 <- as.factor(df2$A2)
 levels(df2$A2)
 levels(df2$A2)[3] <- NA
 Freq(df2$A2, useNA = "always")
 
-#retirar categoria outro para sexo
+#retirar categoria outro para raça/cor
 df2$A3 <- as.factor(df2$A3)
 levels(df2$A3)
 levels(df2$A3)[6] <- NA
@@ -64,7 +79,7 @@ levels(df2$A2)[4] <- NA
 df2$A6 <- ifelse(df2$A6=="Casado(a) ou união estável ou morando junto", "Sim","Não")
 Freq(df2$A6, useNA = "always")
 
-#escolaridade - superior sim não
+#escolaridade - superior sim e não
 df2$A7 <- as.factor(df2$A7)
 levels(df2$A7)
 levels(df2$A2)[7] <- NA
@@ -96,57 +111,125 @@ Freq(df2$A14)
 
 ```
 
+```{r, include = FALSE}
+#transformar variaveis do bloco padrao alimentar
+df2$D4 <- as.factor(df2$D4)
+summary(df2$D4)
+Freq(df2$D4, useNA = "always")
+levels(df2$D4)[4] <- NA
+niveis4 <- levels(df2$D4)
+niveis.ordem4 <- c(4,1,2,3,5)
+niveis4[niveis.ordem4]  # tá certinho?
+df2$D4 <- ordered(df2$D4, levels = niveis4[niveis.ordem4])
+Freq(df2$D4)
 
-## Estatísticas sumárias para idade
-```{r}  
-#summary idade
-df2$A1 <- as.numeric(df2$A1)  # transformando em numero
-summary(df2$A1)
-boxplot(df2$A1)
+#D4 em dois grupos de consumo de FVL
+df2$D4_2 <- Recode(df2$D4,
+                 "Não Saudável" = c("Raramente ou nunca","1 a 2 dias por semana"),
+                 "Saudável" = c("3 a 4 dias por semana","5 ou mais dias por semana" ,"Todos os dias (inclusive sábado e domingo)"),
+                 elselevel = NA
+                 )
+Freq(df2$D4_2)
+
+#D6 - Ultraprocessados
+df2$D6 <- as.factor(df2$D6)
+#summary(df2$D6)
+Freq(df2$D6)
+levels(df2$D6)[4] <- NA
+niveis6 <- levels(df2$D6)
+niveis.ordem6 <- c(4,1,2,3,5)
+niveis6[niveis.ordem6]  
+df2$D6 <- ordered(df2$D6, levels = niveis6[niveis.ordem6])
+Freq(df2$D6)
+
+#D6 em dois grupos de consumo de ultraprocessados
+df2$D6_2 <- Recode(df2$D6,
+                 "Saudável" = c("Raramente ou nunca","1 a 2 dias por semana"),
+                 "Não Saudável" = c("3 a 4 dias por semana","5 a 6 dias por semana", "Todos os dias (inclusive sábado e domingo)")
+)
+Freq(df2$D6_2)
+
+#D8 - Bebidas açucaradas
+df2$D8 <- as.factor(df2$D8)
+summary(df2$D8)
+Freq(df2$D8, useNA = "always")
+levels(df2$D8)[4] <- NA
+niveis8 <- levels(df2$D8)
+niveis.ordem8 <- c(4,1,2,3,5)
+niveis8[niveis.ordem8]  # tá certinho?
+df2$D8 <- ordered(df2$D8, levels = niveis8[niveis.ordem8])
+Freq(df2$D8)
+
+#D8 em dois grupos de consumo de bebidas acucaradas
+df2$D8_2 <- Recode(df2$D8,
+                 "Saudável" = c("Raramente ou nunca","1 a 2 dias por semana"),
+                 "Não Saudável" = c("3 a 4 dias por semana","5 a 6 dias por semana", "Todos os dias (inclusive sábado e domingo)")
+)
+Freq(df2$D8_2)
+
+#D16 - Mudança no padrao de consumo alimentar
+df2$D16 <- as.factor(df2$D16)
+summary(df2$D16)
+
+#Nao sei dizer como NA
+df2$D16 <- Recode(df2$D16,
+                  "Piorou" = c("Piorou muito","Piorou um pouco"),
+                  "Melhorou" = "Melhorou",
+                  "Permaneceu o mesmo" = "Permaneceu o mesmo",
+                  elselevel = NA
+)
+
+summary(df2$D16)
+
+
 ```
 
-## Frequencia por faixa etária
-```{r}
-# Faixa etaria
+
+```{r, include = F}
+#Faixa etaria
+df2$A1 <- as.numeric(df2$A1)  # transformando em numero
 df2$fetaria <- cut(df2$A1, breaks = c(18, 29, 39, 49, 60, 100), right = FALSE)
 
 # tabela de frequencia
 Freq(df2$fetaria, useNA = "always")
+
 ```
 
-## Frequência para piora no estado de saúde 
-```{r}
+
+
+```{r, include = F}
 
 #B1 estado de saude antes
 df2$B1 <- as.factor(df2$B1)
-#Freq(df2$B1, useNA = "always")
+Freq(df2$B1, useNA = "always")
 
 # vamos criar uma variavel com duas categorias? 
 df2$estado.saude.antes <- Recode(df2$B1,
                                "bom" = c("Bom", "Muito bom"),
                                "regular ou ruim" = c("Regular", "Muito ruim", "Ruim"))
-#Freq(df2$estado.saude.antes, useNA = "always")
-#Freq(df2$estado.saude.antes) #obter frequencias sem NAs
+Freq(df2$estado.saude.antes, useNA = "always")
+Freq(df2$estado.saude.antes) #obter frequencias sem NAs
 
 # ++++++++++++++++++++++++++++++++++++++++++++++++++
 #B2 estado de saude agora
 df2$B2 <- as.factor(df2$B2)
 levels(df2$B2)[4] <- NA
-#Freq(df2$B2, useNA = "always")
+Freq(df2$B2, useNA = "always")
 
 # vamos criar uma variavel com duas categorias? 
 df2$estado.saude.agora <- Recode(df2$B2,
                                "bom" = c("Bom", "Muito bom"),
                                "regular ou ruim" = c("Regular", "Muito ruim", "Ruim"))
-#Freq(df2$estado.saude.antes, useNA = "always")
+Freq(df2$estado.saude.antes, useNA = "always")
 
 # mudanca de status de auto-percepcao saude
 df2$piorou.saude <- ifelse(df2$estado.saude.antes == "bom" & df2$estado.saude.agora == "regular ou ruim", "piorou", "igual")
 Freq(df2$piorou.saude, useNA = "always")
+
 ```
 
-## Frequencia para escolaridade
-```{r}
+
+```{r, include = F}
 # A7 escolaridade ----
 df2$A7 <- as.factor(df2$A7)
 levels(df2$A7)
@@ -160,10 +243,12 @@ df2$A7 <- ordered(df2$A7, levels = c("Ensino Fundamental incompleto", "Ensino Fu
 Freq(df2$A7, useNA = "always")
 ```
 
-## Tabela 1 
-```{r}
+
+
+```{r, include = F}
 #Tabela 1 - sociodemograficas
 #install.packages("tableone")
+#pacote que a prof passou
 library(tableone)
 # Selecionando as variaveis que irao compor a tabela
 Varstab <- c("A2", "A3", "fetaria")
@@ -171,6 +256,21 @@ Varstab <- c("A2", "A3", "fetaria")
 tabela1<-CreateTableOne(vars = Varstab, strata = "piorou.saude",data = df2)
 print(tabela1, showAllLevels = TRUE)
 ```
+
+
+```{r, include = FALSE, message = FALSE, warning=FALSE}
+#Tabela 1 - padrao alimentar
+#install.packages("tableone")
+#pacote que a prof passou
+library(tableone)
+# Selecionando as variaveis que irao compor a tabela
+Varstab2 <- c("D4_2", "D6_2", "D8_2", "D16")
+## criando o objeto da TableOne
+tabela2<-CreateTableOne(vars = Varstab2, strata = "piorou.saude",data = df2)
+print(tabela2, showAllLevels = TRUE)
+
+```
+
 
 ```{r}
 #Rótulo das variaveis na tabela 1
@@ -210,19 +310,46 @@ pvalue <- function(x, ...) {
 }
 ```
 
-```{r}
+```{r, include = TRUE}
 #create table 1 with p value
-table1(~ A1 + A2 + A3 + regiao + A6 + A72 + A9 + A11 + A13 + A14 | piorou.saude,
-    data=df2, overall=F , extra.col=list(`P-value`=pvalue))
+table1(~ A1 + A2 + A3 + regiao + A6 + A72 + A9 + A13 + A14 | piorou.saude, rowlabelhead = "Autopercepção de saúde em 2022", data=df2, overall=F , render.missing=NULL, extra.col=list(`P-value`=pvalue))
+```
+
+## Estatísticas sumárias para idade
+```{r, include = TRUE}  
+#summary idade
+#df2$A1 <- as.numeric(df2$A1)  # transformando em numero
+summary(df2$A1)
+aggregate(A1 ~ piorou.saude , df2, mean)
+boxplot(df2$A1 ~ as.factor(df2$piorou.saude), xlab = "Autopercepção da saúde em 2022", ylab = "Idade", col = c("coral1", "cyan4"))
+```
+
+## Estatísticas sumárias para pessoas por domicilio
+```{r, include = TRUE}  
+#summary n de pessoas no domicilio
+df2$A9 <- as.numeric(df2$A9)  # transformando em numero
+summary(df2$A9)
+aggregate(A9 ~ piorou.saude , df2, median)
+boxplot(df2$A9 ~ as.factor(df2$piorou.saude), xlab = "Autopercepção da saúde em 2022", ylab = "N. de pessoas no domicílio", col = c("coral1", "cyan4"))
+```
+
+## Tabela 2 - Padrão Alimentar
+
+
+```{r}
+#Rótulo das variaveis na tabela ed padrao alimentar
+label(df2$D4_2) <- "Consumo de frutas, verduras e legumes"
+label(df2$D6_2) <- "Consumo de ultraprocessados" # funcao label da table1
+label(df2$D8_2) <- "Consumo de bebidas açucaradas"
+label(df2$D16) <- "Mudança no padrão alimentar"
+
 ```
 
 
-## Including Plots
+```{r, include = TRUE}
+#create table 1 with p value
+table1(~ D4_2 + D6_2 + D8_2 + D16 | piorou.saude, rowlabelhead = "Padrão alimentar em 2022", data=df2, overall=F, render.missing=NULL, extra.col=list(`P-value`=pvalue))
 
-You can also embed plots, for example:
-
-```{r}
-plot(pressure)
 ```
 
 

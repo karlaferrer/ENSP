@@ -1,6 +1,6 @@
 ---
 title: "Outputs - Trabalho de Estatística"
-author: "Karla Ferreira"
+author: "Grupo 5"
 date: "`r Sys.Date()`"
 output: word_document
 ---
@@ -9,24 +9,40 @@ output: word_document
 knitr::opts_chunk$set(echo = FALSE) # sem R codes
 ```
 
-## Trabalho de Estatística
+## Hipótese
+-Existe associação entre a autopercepção do estado de saúde e a frequência de consumo de alimentos saudáveis e não saudáveis no contexto da pandemia de Covid-19.
+
+## Objetivos
 
 Objetivo geral:
 
- -Caracterizar a autopercepção de saúde de adultos
-brasileiros durante a pandemia e sua relação com o parão de consumo alimentar.
+-Caracterizar a autopercepção de saúde de adultos brasileiros durante a pandemia e sua relação com o padrão de consumo alimentar.
 
 Objetivos específicos:
 
--Realizar uma análise exploratória (descritiva) dos dados segundo suas variáveis sócio-demográficas e aquelas relacionadas à autopercepção de saúde e ao padrão de consumo alimentar.
+-Realizar análise exploratória dos dados segundo suas características sócio-demográficas e aquelas relacionadas à autopercepção de saúde e ao padrão de consumo alimentar.
 
--Realizar as análises de inferência estatística para que seja possível responder os objetivos propostos do trabalho.
+-Avaliar a associação entre a autopercepção do estado de saúde em 2022 e a frequencia do consumo de alimentos ultraprocessados (marcador de alimentação não saudável).
 
--Avaliar a associação entre a piora de autopercepção de saúde em 2022 e o consumo frequente de alimentos ultraprocessados (marcador de alimentação não saudável). 
+-Avaliar a associação entre a a autopercepção do estado de saúde em 2022 e a frequencia do consumo de frutas, legumes e verduras (marcador de alimentação saudável).
 
--Avaliar a associação entre a piora de autopercepção de saúde em 2022 e o consumo frequente de frutas, legumes e verduras (marcador de alimentação saudável).
+-Avaliar a associação entre a autopercepção do estado de saúde em 2022 e as possíveis mudanças no padrão de consumo alimentar com a pandemia de COVID-19.
 
--Avaliar a associação entre a piora de autopercepção de saúde em 2022 e as possíveis mudanças no padrão de consumo alimentar com a pandemia de COVID-19.
+## Desfechos:
+
+-Desfecho primário: Autopercepção do estado de saúde em 2022.
+
+-Desfecho secundário: Autopercepção de piora do estado de saúde em 2022.
+
+## Exposições:
+
+-Consumo frequente de alimentos não saudáveis
+
+-Consumo pouco frequente de alimentos saudáveis
+
+## População do estudo
+
+-Adultos brasileiros maiores de 18 anos
 
 ```{r}
 #leitura do banco
@@ -184,7 +200,6 @@ summary(df2$D16)
 
 ```
 
-
 ```{r, include = F}
 #Faixa etaria
 df2$A1 <- as.numeric(df2$A1)  # transformando em numero
@@ -195,8 +210,6 @@ Freq(df2$fetaria, useNA = "always")
 
 ```
 
-
-
 ```{r, include = F}
 
 #B1 estado de saude antes
@@ -205,8 +218,8 @@ Freq(df2$B1, useNA = "always")
 
 # vamos criar uma variavel com duas categorias? 
 df2$estado.saude.antes <- Recode(df2$B1,
-                               "bom" = c("Bom", "Muito bom"),
-                               "regular ou ruim" = c("Regular", "Muito ruim", "Ruim"))
+                               "Bom" = c("Bom", "Muito bom"),
+                               "Regular ou ruim" = c("Regular", "Muito ruim", "Ruim"))
 Freq(df2$estado.saude.antes, useNA = "always")
 Freq(df2$estado.saude.antes) #obter frequencias sem NAs
 
@@ -218,16 +231,15 @@ Freq(df2$B2, useNA = "always")
 
 # vamos criar uma variavel com duas categorias? 
 df2$estado.saude.agora <- Recode(df2$B2,
-                               "bom" = c("Bom", "Muito bom"),
-                               "regular ou ruim" = c("Regular", "Muito ruim", "Ruim"))
+                               "Bom" = c("Bom", "Muito bom"),
+                               "Regular ou ruim" = c("Regular", "Muito ruim", "Ruim"))
 Freq(df2$estado.saude.antes, useNA = "always")
 
 # mudanca de status de auto-percepcao saude
-df2$piorou.saude <- ifelse(df2$estado.saude.antes == "bom" & df2$estado.saude.agora == "regular ou ruim", "piorou", "igual")
+df2$piorou.saude <- ifelse(df2$estado.saude.antes == "Bom" & df2$estado.saude.agora == "Regular ou ruim", "Piorou", "Igual")
 Freq(df2$piorou.saude, useNA = "always")
 
 ```
-
 
 ```{r, include = F}
 # A7 escolaridade ----
@@ -243,8 +255,6 @@ df2$A7 <- ordered(df2$A7, levels = c("Ensino Fundamental incompleto", "Ensino Fu
 Freq(df2$A7, useNA = "always")
 ```
 
-
-
 ```{r, include = F}
 #Tabela 1 - sociodemograficas
 #install.packages("tableone")
@@ -256,7 +266,6 @@ Varstab <- c("A2", "A3", "fetaria")
 tabela1<-CreateTableOne(vars = Varstab, strata = "piorou.saude",data = df2)
 print(tabela1, showAllLevels = TRUE)
 ```
-
 
 ```{r, include = FALSE, message = FALSE, warning=FALSE}
 #Tabela 1 - padrao alimentar
@@ -273,6 +282,7 @@ print(tabela2, showAllLevels = TRUE)
 
 
 ```{r}
+#Tabela 1 usando  o pacote table1
 #Rótulo das variaveis na tabela 1
 library(MatchIt) 
 library(htmlTable)
@@ -287,7 +297,7 @@ label(df2$A6) <- "Casado(a)"
 label(df2$A72) <- "Nível Superior"
 label(df2$A9) <- "N. de pessoas no domicílio"
 label(df2$A11) <- "Ocupação"
-label(df2$A13) <- "Faixa de Renda"
+label(df2$A13) <- "Faixa de renda"
 label(df2$A14) <- "Recebeu auxílio emergencial?"
 #label(df2$fetaria) <- "Faixa etária"
 ```
@@ -310,34 +320,72 @@ pvalue <- function(x, ...) {
 }
 ```
 
+
+## Tabela 1 - Características sócio-demográficas da população do estudo  segundo a autopercepção do estado de saúde em 2022, Brasil.
+
+
 ```{r, include = TRUE}
 #create table 1 with p value
-table1(~ A1 + A2 + A3 + regiao + A6 + A72 + A9 + A13 + A14 | piorou.saude, rowlabelhead = "Autopercepção de saúde em 2022", data=df2, overall=F , render.missing=NULL, extra.col=list(`P-value`=pvalue))
+table1(~ A1 + A2 + A3 + regiao + A6 + A72 + A9 + A13 + A14 | df2$estado.saude.agora, rowlabelhead = "Variável/Categoria", data=df2, render.missing=NULL, overall = "Total")
+
 ```
 
-## Estatísticas sumárias para idade
-```{r, include = TRUE}  
+
+```{r, include = F}
 #summary idade
 #df2$A1 <- as.numeric(df2$A1)  # transformando em numero
 summary(df2$A1)
-aggregate(A1 ~ piorou.saude , df2, mean)
-boxplot(df2$A1 ~ as.factor(df2$piorou.saude), xlab = "Autopercepção da saúde em 2022", ylab = "Idade", col = c("coral1", "cyan4"))
+
 ```
 
-## Estatísticas sumárias para pessoas por domicilio
-```{r, include = TRUE}  
+## Box-plot para idade segundo a autopercepção do estado de saúde em 2022
+
+```{r}
+#aggregate(A1 ~ piorou.saude , df2, mean)
+boxplot(df2$A1 ~ as.factor(df2$estado.saude.agora), xlab = "Autopercepção da saúde em 2022", ylab = "Idade", col = c("coral1", "cyan4"))
+```
+
+
+
+
+## Histograma da idade dos entrevistados de acordo com a autopercepção de saúde em 2022
+
+```{r, include = TRUE}
+#Histograma para idade nos grupos
+par(mfrow=c(1,3))
+hist(df2$A1, nclass=20, col='gray',main="",
+xlab="Toda população", xlim=c(10,90))
+hist(df2$A1[df2$estado.saude.agora=="Bom"], nclass=20,
+col='coral1',main="",xlab="Bom",xlim=c(10,90))
+hist(df2$A1[df2$estado.saude.agora=="Regular ou ruim"], nclass=20,
+col='cyan4',main="",xlab="Regular ou ruim",xlim=c(10,90))
+
+```
+
+
+```{r, include = F}
+#teste de normalidade para idade
+shapiro.test(log(df2$A1))
+# Os dados não atendem o pressuposto da normalidade
+#Alternativa usar log - nã resolve
+#teste não paramétricoo
+```
+
+
+```{r, include = F}
 #summary n de pessoas no domicilio
 df2$A9 <- as.numeric(df2$A9)  # transformando em numero
 summary(df2$A9)
-aggregate(A9 ~ piorou.saude , df2, median)
-boxplot(df2$A9 ~ as.factor(df2$piorou.saude), xlab = "Autopercepção da saúde em 2022", ylab = "N. de pessoas no domicílio", col = c("coral1", "cyan4"))
+#aggregate(A9 ~ piorou.saude , df2, median)
+boxplot(df2$A9 ~ as.factor(df2$estado.saude.agora), xlab = "Autopercepção da saúde em 2022", ylab = "N. de pessoas no domicílio", col = c("coral1", "cyan4"))
 ```
 
-## Tabela 2 - Padrão Alimentar
+
+## Tabela 2 - Variáveis do bloco D - Padrão alimentar, segundo a autopercepção do estado de saúde em 2022
 
 
 ```{r}
-#Rótulo das variaveis na tabela ed padrao alimentar
+#Rótulo das variaveis na tabela de padrao alimentar - piora
 label(df2$D4_2) <- "Consumo de frutas, verduras e legumes"
 label(df2$D6_2) <- "Consumo de ultraprocessados" # funcao label da table1
 label(df2$D8_2) <- "Consumo de bebidas açucaradas"
@@ -345,11 +393,23 @@ label(df2$D16) <- "Mudança no padrão alimentar"
 
 ```
 
+```{r, include = TRUE}
+#create table 1 with p value 
+table1(~ D4_2 + D6_2 + D8_2 + D16 | df2$estado.saude.agora, rowlabelhead = "Padrão alimentar em 2022/Saúde em 2022", data=df2, overall=F, render.missing=NULL, extra.col=list(`P-value`=pvalue))
+
+
+```
+
+
+## Tabela 3 - Variáveis do bloco D - Padrão alimentar, segundo a autopercepção de piora do estado de saúde em 2022
+
 
 ```{r, include = TRUE}
 #create table 1 with p value
-table1(~ D4_2 + D6_2 + D8_2 + D16 | piorou.saude, rowlabelhead = "Padrão alimentar em 2022", data=df2, overall=F, render.missing=NULL, extra.col=list(`P-value`=pvalue))
+table1(~ D4_2 + D6_2 + D8_2 + D16 | piorou.saude, rowlabelhead = "Padrão alimentar em 2022/Saúde em 2022", data=df2, overall=F, render.missing=NULL, extra.col=list(`P-value`=pvalue))
 
 ```
+
+
 
 

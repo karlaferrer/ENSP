@@ -10,21 +10,20 @@ knitr::opts_chunk$set(echo = FALSE) # sem R codes
 ```
 
 ## Hipótese
+
 -Existe associação entre a autopercepção do estado de saúde e a frequência de consumo de alimentos saudáveis e não saudáveis no contexto da pandemia de Covid-19.
 
 ## Objetivos
 
 Objetivo geral:
 
--Caracterizar a autopercepção de saúde de adultos brasileiros durante a pandemia e sua relação com o padrão de consumo alimentar.
+-Caracterizar a autopercepção de saúde de adultos brasileiros e sua relação com o padrão de consumo alimentar no contexto da pandemia de Covid-19.
 
 Objetivos específicos:
 
--Realizar análise exploratória dos dados segundo suas características sócio-demográficas e aquelas relacionadas à autopercepção de saúde e ao padrão de consumo alimentar.
+-Realizar análise exploratória dos dados relacionados à autopercepção de saúde e ao padrão de consumo alimentar em 2022.
 
--Avaliar a associação entre a autopercepção do estado de saúde em 2022 e a frequencia do consumo de alimentos ultraprocessados (marcador de alimentação não saudável).
-
--Avaliar a associação entre a a autopercepção do estado de saúde em 2022 e a frequencia do consumo de frutas, legumes e verduras (marcador de alimentação saudável).
+-Avaliar a associação entre a autopercepção do estado de saúde em 2022 e a frequencia do consumo de alimentos saudáveis e não saudáveis.
 
 -Avaliar a associação entre a autopercepção do estado de saúde em 2022 e as possíveis mudanças no padrão de consumo alimentar com a pandemia de COVID-19.
 
@@ -32,13 +31,12 @@ Objetivos específicos:
 
 -Desfecho primário: Autopercepção do estado de saúde em 2022.
 
--Desfecho secundário: Autopercepção de piora do estado de saúde em 2022.
 
 ## Exposições:
 
--Consumo frequente de alimentos não saudáveis
+-Consumo frequente de alimentos não saudáveis: alimentos ultraprocessados e bebidas açucaradas
 
--Consumo pouco frequente de alimentos saudáveis
+-Consumo pouco frequente de alimentos saudáveis: frutas, verduras e legumes.
 
 ## População do estudo
 
@@ -141,8 +139,8 @@ Freq(df2$D4)
 
 #D4 em dois grupos de consumo de FVL
 df2$D4_2 <- Recode(df2$D4,
-                 "Não Saudável" = c("Raramente ou nunca","1 a 2 dias por semana"),
                  "Saudável" = c("3 a 4 dias por semana","5 ou mais dias por semana" ,"Todos os dias (inclusive sábado e domingo)"),
+                 "Não saudável" = c("Raramente ou nunca","1 a 2 dias por semana"),
                  elselevel = NA
                  )
 Freq(df2$D4_2)
@@ -161,7 +159,7 @@ Freq(df2$D6)
 #D6 em dois grupos de consumo de ultraprocessados
 df2$D6_2 <- Recode(df2$D6,
                  "Saudável" = c("Raramente ou nunca","1 a 2 dias por semana"),
-                 "Não Saudável" = c("3 a 4 dias por semana","5 a 6 dias por semana", "Todos os dias (inclusive sábado e domingo)")
+                 "Não saudável" = c("3 a 4 dias por semana","5 a 6 dias por semana", "Todos os dias (inclusive sábado e domingo)")
 )
 Freq(df2$D6_2)
 
@@ -179,7 +177,7 @@ Freq(df2$D8)
 #D8 em dois grupos de consumo de bebidas acucaradas
 df2$D8_2 <- Recode(df2$D8,
                  "Saudável" = c("Raramente ou nunca","1 a 2 dias por semana"),
-                 "Não Saudável" = c("3 a 4 dias por semana","5 a 6 dias por semana", "Todos os dias (inclusive sábado e domingo)")
+                 "Não saudável" = c("3 a 4 dias por semana","5 a 6 dias por semana", "Todos os dias (inclusive sábado e domingo)")
 )
 Freq(df2$D8_2)
 
@@ -280,7 +278,6 @@ print(tabela2, showAllLevels = TRUE)
 
 ```
 
-
 ```{r}
 #Tabela 1 usando  o pacote table1
 #Rótulo das variaveis na tabela 1
@@ -320,16 +317,14 @@ pvalue <- function(x, ...) {
 }
 ```
 
+```{r, include = F}
+#Essa tabela não será usada
+#Tabela 1 - Características sócio-demográficas da população do estudo segundo a #autopercepção do estado de saúde em 2022, Brasil.
 
-## Tabela 1 - Características sócio-demográficas da população do estudo  segundo a autopercepção do estado de saúde em 2022, Brasil.
-
-
-```{r, include = TRUE}
 #create table 1 with p value
 table1(~ A1 + A2 + A3 + regiao + A6 + A72 + A9 + A13 + A14 | df2$estado.saude.agora, rowlabelhead = "Variável/Categoria", data=df2, render.missing=NULL, overall = "Total")
 
 ```
-
 
 ```{r, include = F}
 #summary idade
@@ -338,19 +333,13 @@ summary(df2$A1)
 
 ```
 
-## Box-plot para idade segundo a autopercepção do estado de saúde em 2022
-
-```{r}
+```{r, include = F}
 #aggregate(A1 ~ piorou.saude , df2, mean)
+#Box-plot para idade segundo a autopercepção do estado de saúde em 2022
 boxplot(df2$A1 ~ as.factor(df2$estado.saude.agora), xlab = "Autopercepção da saúde em 2022", ylab = "Idade", col = c("coral1", "cyan4"))
 ```
 
-
-
-
-## Histograma da idade dos entrevistados de acordo com a autopercepção de saúde em 2022
-
-```{r, include = TRUE}
+```{r, include = F}
 #Histograma para idade nos grupos
 par(mfrow=c(1,3))
 hist(df2$A1, nclass=20, col='gray',main="",
@@ -362,7 +351,6 @@ col='cyan4',main="",xlab="Regular ou ruim",xlim=c(10,90))
 
 ```
 
-
 ```{r, include = F}
 #teste de normalidade para idade
 shapiro.test(log(df2$A1))
@@ -370,7 +358,6 @@ shapiro.test(log(df2$A1))
 #Alternativa usar log - nã resolve
 #teste não paramétricoo
 ```
-
 
 ```{r, include = F}
 #summary n de pessoas no domicilio
@@ -380,9 +367,7 @@ summary(df2$A9)
 boxplot(df2$A9 ~ as.factor(df2$estado.saude.agora), xlab = "Autopercepção da saúde em 2022", ylab = "N. de pessoas no domicílio", col = c("coral1", "cyan4"))
 ```
 
-
-## Tabela 2 - Variáveis do bloco D - Padrão alimentar, segundo a autopercepção do estado de saúde em 2022
-
+## Tabela 1 - Variáveis do bloco D - Padrão alimentar, segundo categorias de autopercepção do estado de saúde em 2022
 
 ```{r}
 #Rótulo das variaveis na tabela de padrao alimentar - piora
@@ -395,21 +380,62 @@ label(df2$D16) <- "Mudança no padrão alimentar"
 
 ```{r, include = TRUE}
 #create table 1 with p value 
-table1(~ D4_2 + D6_2 + D8_2 + D16 | df2$estado.saude.agora, rowlabelhead = "Padrão alimentar em 2022/Saúde em 2022", data=df2, overall=F, render.missing=NULL, extra.col=list(`P-value`=pvalue))
-
-
+table1(~ D4_2 + D6_2 + D8_2 + D16 | df2$estado.saude.agora, rowlabelhead = "Padrão alimentar em 2022/Saúde em 2022", data=df2, overall=F, render.missing=NULL, extra.col=list(`Valor-p`=pvalue))
 ```
 
-
-## Tabela 3 - Variáveis do bloco D - Padrão alimentar, segundo a autopercepção de piora do estado de saúde em 2022
-
-
-```{r, include = TRUE}
+```{r, include = F}
+#Essa tabela não sera usada
 #create table 1 with p value
 table1(~ D4_2 + D6_2 + D8_2 + D16 | piorou.saude, rowlabelhead = "Padrão alimentar em 2022/Saúde em 2022", data=df2, overall=F, render.missing=NULL, extra.col=list(`P-value`=pvalue))
 
 ```
 
+```{r}
+#Intervalos de confiança para os ODDS com o teste de Fisher
 
+# D4_2 FVL e estado de saúde 2022 
+fisher.test(table(df2$D4_2,df2$estado.saude.agora))
 
+# D6_2 ultraprocessados e estado de saúde 2022 
+fisher.test(table(df2$D6_2,df2$estado.saude.agora))
 
+# D8_2 bebidas acucaradas e estado de saúde 2022 
+fisher.test(table(df2$D8_2,df2$estado.saude.agora))
+
+# D8_2 bebidas acucaradas e estado de saúde 2022 
+# fazer somente melhorou e piorou
+mel_pio<- rbind(c(189,58),c(210,181))
+fisher.test(mel_pio)
+```
+
+## Tabela 2 - Intervalos 579+221de confiança das razões de prevalência e das razões de chance de prevalência para variáveis do bloco D - Padrão alimentar
+
+```{r}
+# IC para RP e POR - D4_2 FVL
+library(epiR)
+epi.2by2(dat = table(df2$D4_2,df2$estado.saude.agora), method = "cross.sectional",
+conf.level = 0.95, units = 100, outcome = "as.columns")
+```
+
+```{r}
+# IC para RP e POR - D6_2 ultraprocessados
+library(epiR)
+epi.2by2(dat = table(df2$D6_2,df2$estado.saude.agora), method = "cross.sectional",
+conf.level = 0.95, units = 100, outcome = "as.columns")
+```
+
+```{r}
+# IC para RP e POR - D8_2 bebidas acucaradas
+library(epiR)
+epi.2by2(dat = table(df2$D8_2,df2$estado.saude.agora), method = "cross.sectional",
+conf.level = 0.95, units = 100, outcome = "as.columns")
+```
+
+```{r}
+# fazer somente melhorou e piorou
+mel_pio<- rbind(c(189,58),c(210,181))
+# IC para RP e POR - mudança no padrao alimentar
+library(epiR)
+epi.2by2(dat = mel_pio, method = "cross.sectional",
+conf.level = 0.95, units = 100, outcome = "as.columns")
+```

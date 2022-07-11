@@ -27,10 +27,9 @@ Objetivos específicos:
 
 -Avaliar a associação entre a autopercepção do estado de saúde em 2022 e as possíveis mudanças no padrão de consumo alimentar com a pandemia de COVID-19.
 
-## Desfechos:
+## Desfecho:
 
 -Desfecho primário: Autopercepção do estado de saúde em 2022.
-
 
 ## Exposições:
 
@@ -306,7 +305,7 @@ pvalue <- function(x, ...) {
     g <- factor(rep(1:length(x), times=sapply(x, length)))
     if (is.numeric(y)) {
         # For numeric variables, perform a standard 2-sample t-test
-        p <- t.test(y ~ g)$p.value
+        p <- kruskal.test(y ~ g)$p.value
     } else {
         # For categorical variables, perform a chi-squared test of independence
         p <- chisq.test(table(y, g))$p.value
@@ -326,51 +325,12 @@ table1(~ A1 + A2 + A3 + regiao + A6 + A72 + A9 + A13 + A14 | df2$estado.saude.ag
 
 ```
 
-```{r, include = F}
-#summary idade
-#df2$A1 <- as.numeric(df2$A1)  # transformando em numero
-summary(df2$A1)
-
-```
-
-```{r, include = F}
-#aggregate(A1 ~ piorou.saude , df2, mean)
-#Box-plot para idade segundo a autopercepção do estado de saúde em 2022
-boxplot(df2$A1 ~ as.factor(df2$estado.saude.agora), xlab = "Autopercepção da saúde em 2022", ylab = "Idade", col = c("coral1", "cyan4"))
-```
-
-```{r, include = F}
-#Histograma para idade nos grupos
-par(mfrow=c(1,3))
-hist(df2$A1, nclass=20, col='gray',main="",
-xlab="Toda população", xlim=c(10,90))
-hist(df2$A1[df2$estado.saude.agora=="Bom"], nclass=20,
-col='coral1',main="",xlab="Bom",xlim=c(10,90))
-hist(df2$A1[df2$estado.saude.agora=="Regular ou ruim"], nclass=20,
-col='cyan4',main="",xlab="Regular ou ruim",xlim=c(10,90))
-
-```
-
-```{r, include = F}
-#teste de normalidade para idade
-shapiro.test(log(df2$A1))
-# Os dados não atendem o pressuposto da normalidade
-#Alternativa usar log - nã resolve
-#teste não paramétricoo
-```
-
-```{r, include = F}
-#summary n de pessoas no domicilio
-df2$A9 <- as.numeric(df2$A9)  # transformando em numero
-summary(df2$A9)
-#aggregate(A9 ~ piorou.saude , df2, median)
-boxplot(df2$A9 ~ as.factor(df2$estado.saude.agora), xlab = "Autopercepção da saúde em 2022", ylab = "N. de pessoas no domicílio", col = c("coral1", "cyan4"))
-```
 
 ## Tabela 1 - Variáveis do bloco D - Padrão alimentar, segundo categorias de autopercepção do estado de saúde em 2022
 
 ```{r}
 #Rótulo das variaveis na tabela de padrao alimentar - piora
+label(df2$A1) <- "Idade"
 label(df2$D4_2) <- "Consumo de frutas, verduras e legumes"
 label(df2$D6_2) <- "Consumo de ultraprocessados" # funcao label da table1
 label(df2$D8_2) <- "Consumo de bebidas açucaradas"
@@ -380,8 +340,46 @@ label(df2$D16) <- "Mudança no padrão alimentar"
 
 ```{r, include = TRUE}
 #create table 1 with p value 
-table1(~ D4_2 + D6_2 + D8_2 + D16 | df2$estado.saude.agora, rowlabelhead = "Padrão alimentar em 2022/Saúde em 2022", data=df2, overall=F, render.missing=NULL, extra.col=list(`Valor-p`=pvalue))
+table1(~ A1 + D4_2 + D6_2 + D8_2 + D16 | df2$estado.saude.agora, rowlabelhead = "Padrão alimentar em 2022/Saúde em 2022", data=df2, overall=F, render.missing=NULL, extra.col=list(`Valor-p`=pvalue))
 ```
+
+```{r, include = F}
+#summary idade
+#df2$A1 <- as.numeric(df2$A1)  # transformando em numero
+summary(df2$A1)
+
+```
+
+## Histograma para a variável idade segundo a autopercepção do estado de saúde em 2022 
+```{r, include = T}
+#Histograma para idade nos grupos
+par(mfrow=c(1,3))
+hist(df2$A1, nclass=20, col='gray',main="",
+xlab="Toda população", xlim=c(10,90), border="white")
+hist(df2$A1[df2$estado.saude.agora=="Bom"], nclass=20,
+col='coral1',main="",xlab="Bom",xlim=c(10,90), border="white")
+hist(df2$A1[df2$estado.saude.agora=="Regular ou ruim"], nclass=20,
+col='cyan4',main="",xlab="Regular ou ruim",xlim=c(10,90), border="white")
+
+```
+
+Teste de normalidade para a variável idade e teste alternativo:Kruskal-Wallis 
+```{r, include = T}
+#teste de normalidade para idade
+shapiro.test(df2$A1)
+# Os dados não atendem o pressuposto da normalidade
+#Alternativa usar log - não resolve
+#teste não paramétricoo
+wilcox.test(A1 ~ estado.saude.agora, data = df2, conf.level=0.95, conf.int = T)
+```
+
+## Box-plot para a variável idade segundo a autopercepção do estado de saúde em 2022 
+```{r, include = T}
+#aggregate(A1 ~ piorou.saude , df2, mean)
+#Box-plot para idade segundo a autopercepção do estado de saúde em 2022
+boxplot(df2$A1 ~ as.factor(df2$estado.saude.agora), xlab = "Autopercepção da saúde em 2022", ylab = "Idade", col = c("coral1", "cyan4"))
+```
+
 
 ```{r, include = F}
 #Essa tabela não sera usada
@@ -390,25 +388,8 @@ table1(~ D4_2 + D6_2 + D8_2 + D16 | piorou.saude, rowlabelhead = "Padrão alimen
 
 ```
 
-```{r}
-#Intervalos de confiança para os ODDS com o teste de Fisher
 
-# D4_2 FVL e estado de saúde 2022 
-fisher.test(table(df2$D4_2,df2$estado.saude.agora))
-
-# D6_2 ultraprocessados e estado de saúde 2022 
-fisher.test(table(df2$D6_2,df2$estado.saude.agora))
-
-# D8_2 bebidas acucaradas e estado de saúde 2022 
-fisher.test(table(df2$D8_2,df2$estado.saude.agora))
-
-# D8_2 bebidas acucaradas e estado de saúde 2022 
-# fazer somente melhorou e piorou
-mel_pio<- rbind(c(189,58),c(210,181))
-fisher.test(mel_pio)
-```
-
-## Tabela 2 - Intervalos 579+221de confiança das razões de prevalência e das razões de chance de prevalência para variáveis do bloco D - Padrão alimentar
+## Tabela 2 - Intervalos de confiança das razões de prevalência e das razões de chance de prevalência para variáveis do bloco D - Padrão alimentar
 
 ```{r}
 # IC para RP e POR - D4_2 FVL
@@ -434,8 +415,86 @@ conf.level = 0.95, units = 100, outcome = "as.columns")
 ```{r}
 # fazer somente melhorou e piorou
 mel_pio<- rbind(c(189,58),c(210,181))
-# IC para RP e POR - mudança no padrao alimentar
+# IC para RP e lsPOR - mudança no padrao alimentar
 library(epiR)
 epi.2by2(dat = mel_pio, method = "cross.sectional",
 conf.level = 0.95, units = 100, outcome = "as.columns")
 ```
+
+
+```{r}
+# fazer somente piorou e continuou o mesmo
+mesmo_pio<- matrix(c(283,85,210,181), nrow=2, byrow=T)
+epi.2by2(dat = mesmo_pio, method = "cross.sectional",
+conf.level = 0.95, units = 100, outcome = "as.columns")
+```
+
+## Frequência para o consumo de alimentos saudáveis e não saudáveis, segundo a autopercepção da saúde em 2022 
+
+```{r}
+data1 <- table(df2$D4_2,df2$estado.saude.agora)
+data2 <- table(df2$D6_2,df2$estado.saude.agora)
+data3 <- table(df2$D8_2,df2$estado.saude.agora)
+
+library("RColorBrewer")
+par(mfrow=c(1,3))
+
+barplot(data1,col=c("darkgoldenrod2","chocolate4") ,border="white", 
+        font.axis=2, beside=T, font.lab=2, 
+        main = "FLV", cex.names=0.7)
+legend(x= "topright", legend= rownames(data1), 
+        col = c("darkgoldenrod2","chocolate4"),pch = 15, cex = 0.8)
+
+barplot(data2,col=c("darkgoldenrod2","chocolate4") ,border="white", 
+        font.axis=2, beside=T, font.lab=2,
+        main = "Ultraprocessados", cex.names=0.7)
+
+barplot(data3,col=c("darkgoldenrod2","chocolate4") ,border="white", 
+        font.axis=2, beside=T, font.lab=2,
+        main = "Bebidas açucaradas", cex.names=0.7)    
+```
+
+## Frequência o tipo de mudança no padrão alimentar em 2022, segundo a autopercepção da saúde em 2022 
+
+```{r}
+#grafico bivariado
+#estado de saúde em 2022 e mudança no padrao alimentar
+data4 <- table(df2$D16,df2$estado.saude.agora)
+
+# Grouped barplot
+# Window taller than wider
+#windows(width = 4, height = 4)
+
+# Save current graphical parameters
+#opar <- par(no.readonly = TRUE)
+
+# Change the margins of the plot (the first is the bottom margin)
+#par(mar = c(6, 4.1, 4.1, 2.1))
+
+barplot(data4, 
+        col=colors()[c(23,89,12)] , 
+        border="white", 
+        font.axis=2, 
+        beside=T, 
+        #ylab="Prevalência %", 
+        #ylim = c(0,100),
+        font.lab=2, cex.names=0.8, cex.axis=0.8)
+
+legend(x = "topright",
+       inset = c(0, 0), # You will need to fine-tune the second
+       # value depending on the windows size
+       legend = rownames(data4),
+       #title = "Padrão alimentar",
+       #lty = c(1, 2),
+       col = colors()[c(23,89,12)],
+       pch = 15,
+       xpd = TRUE, # You need to specify this graphical parameter to add
+       # the legend outside the plot area
+       horiz = F,  cex = 0.8) # Horizontal legend. You can also set the number
+# of columns with the argument ncol
+# if horiz = FALSE
+
+# Back to the default graphical parameters
+#on.exit(par(opar))
+```
+

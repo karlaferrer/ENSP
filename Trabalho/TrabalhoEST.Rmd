@@ -439,23 +439,23 @@ data3 <- prop.table(table(df2$D8_2,df2$estado.saude.agora), margin = 2)*100
 library("RColorBrewer")
 par(mfrow=c(1,3))
 
-barplot(data1,col=c("coral1", "cyan4") ,border="white", 
+barplot(data1,col=c("cyan4","coral1") ,border="white", 
         font.axis=2, beside=T, font.lab=2, 
         main = "FLV", cex.names=0.7, ylim=c(0,85), ylab = "%")
 legend(x= "topright", legend= rownames(data1), 
-        col = c("coral1", "cyan4"),pch = 15, cex = 1.0)
+        col = c("cyan4","coral1"),pch = 15, cex = 1.0)
 
-barplot(data2,col=c("coral1", "cyan4") ,border="white", 
+barplot(data2,col=c("cyan4","coral1") ,border="white", 
         font.axis=2, beside=T, font.lab=2,
         main = "Ultraprocessados", cex.names=0.7, ylim=c(0,85))
 legend(x= "topright", legend= rownames(data2), 
-        col = c("coral1", "cyan4"),pch = 15, cex = 1.0)
+        col = c("cyan4","coral1"),pch = 15, cex = 1.0)
 
-barplot(data3,col=c("coral1", "cyan4") ,border="white", 
+barplot(data3,col=c("cyan4","coral1") ,border="white", 
         font.axis=2, beside=T, font.lab=2,
         main = "Bebidas açucaradas", cex.names=0.7, ylim=c(0,85))
 legend(x= "topright", legend= rownames(data3), 
-        col = c("coral1", "cyan4"),pch = 15, cex = 1.0)
+        col = c("cyan4","coral1"),pch = 15, cex = 1.0)
 ```
 
 ## Frequência relativa % o tipo de mudança no padrão alimentar em 2022, segundo a autopercepção da saúde em 2022 

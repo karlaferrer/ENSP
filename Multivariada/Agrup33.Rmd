@@ -1,0 +1,408 @@
+---
+title: "Análise Multivariada"
+author: "Karla Ferreira"
+date: '`r Sys.Date()`'
+output: word_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r, include = FALSE}
+#leitura do banco
+library(DescTools) 
+library(readxl)
+df <- read_xlsx("dados_brutos_2022.xlsx", col_types = "text")
+```
+
+```{r, include = FALSE}
+#subset variaveis sociodemograficas e bloco padrao alimentar - df2
+myvars <- c("A1","A2", "B2", "C5","D4" )
+df2 <- df[myvars]
+
+```
+
+```{r, include = FALSE}
+#transformar variaveis sociodemograficas
+
+#idade 
+df2$A1 <- as.numeric(df2$A1)
+df2$A1 <- cut(df2$A1, breaks = c(18, 29, 39, 49, 60, 100), right = FALSE, order = TRUE)
+
+
+#retirar categoria outro para sexo
+df2$A2 <- as.factor(df2$A2)
+levels(df2$A2)
+levels(df2$A2)[3] <- NA
+Freq(df2$A2, useNA = "always")
+
+#criar categorias F=1 e M=2
+#df2$A2 <- factor(df2$A2, labels = c(Fem,Mas))
+
+
+#B2 estado de saude 2022
+df2$B2 <- as.factor(df2$B2)
+levels(df2$B2)[4] <- NA
+Freq(df2$B2, useNA = "always")
+niveisB2 <- levels(df2$B2)
+niveis.ordemB2 <- c(3,5,4,1,2)
+niveisB2[niveis.ordemB2]  # tá certinho?
+df2$B2 <- ordered(df2$B2, levels = niveisB2[niveis.ordemB2])
+Freq(df2$B2)
+
+
+#criar categorias ordinais
+#df2$B2 <- factor(df2$B2, labels = c(0,1,2,3,4), order = TRUE)
+
+#transformar variaveis do bloco C
+#5 atividade física
+df2$C5 <- as.factor(df2$C5)
+Freq(df2$C5)
+levels(df2$C5)[5] <- NA
+niveisC5 <- levels(df2$C5)
+niveis.ordemC5 <- c(4,1,2,3)
+niveisC5[niveis.ordemC5]  # tá certinho?
+df2$C5 <- ordered(df2$C5, levels = niveisC5[niveis.ordemC5])
+Freq(df2$C5)
+df2$C5 <- factor(df2$C5, labels = c("Não pratico","1 a 2","3 a 4","5 ou mais"), ordered = TRUE)
+
+#D4 - FVL
+df2$D4 <- as.factor(df2$D4)
+Freq(df2$D4, useNA = "always")
+levels(df2$D4)[4] <- NA
+niveis4 <- levels(df2$D4)
+niveis.ordem4 <- c(4,1,2,3,5)
+niveis4[niveis.ordem4]  # tá certinho?
+df2$D4 <- ordered(df2$D4, levels = niveis4[niveis.ordem4])
+Freq(df2$D4)
+#criar categorias ordinais
+df2$D4 <- factor(df2$D4, labels = c("Raramente ou nunca","1 a 2 dias", "3 a 4 dias","5 ou mais dias", "Todos os dias "), 
+                 order = TRUE)
+
+df2<-na.omit(df2)
+
+```
+
+
+```{r, include = FALSE}
+#Tabela 1 usando  o pacote table1
+#Rótulo das variaveis na tabela 1
+library(MatchIt) 
+library(htmlTable)
+library(lessR)
+library(table1)
+library(flextable) # para formatar a tabela
+label(df2$A1) <- "Idade"
+label(df2$A2) <- "Sexo" # funcao label da table1
+label(df2$B2) <- "Estado de saúde em 2022"
+label(df2$C5) <- "Atividade física (dias)"
+label(df2$D4) <- "Consumo de frutas, verduras e legumes"
+```
+
+
+```{r, include = FALSE}
+pvalue <- function(x, ...) {
+    # Construct vectors of data y, and groups (strata) g
+    y <- unlist(x)
+    g <- factor(rep(1:length(x), times=sapply(x, length)))
+    if (is.numeric(y)) {
+        # For numeric variables, perform a standard 2-sample t-test
+        p <- wilcox.test(y ~ g, conf.level=0.95, conf.int = T)$p.value
+    } else {
+        # For categorical variables, perform a chi-squared test of independence
+        p <- chisq.test(table(y, g))$p.value
+    }
+    # Format the p-value, using an HTML entity for the less-than sign.
+    # The initial empty string places the output on the line below the variable label.
+    c("", sub("<", "&lt;", format.pval(p, digits=3, eps=0.001)))
+}
+```
+
+```{r, echo = FALSE}
+#create table 1 with p value 
+table1(~ A1 + B2 + C5 + D4  | df2$A2, rowlabelhead = "Sexo", data=df2, overall = "Total", render.missing=NULL, extra.col=list(`Valor-p`=pvalue))
+```
+
+
+```{r, include = FALSE}
+#Primeiro passo
+# Matriz de distancias
+library(cluster)
+dista2<-daisy(df2, metric='gower')
+#Visualizar matriz de distancias
+library(factoextra)
+fviz_dist(dista2)
+
+```
+
+
+
+```{r, echo = FALSE}
+#------------ DIVISIVE CLUSTERING ------------#
+#divisive.clust <- diana(as.matrix(dista2), 
+                  #diss = TRUE, keep.diss = TRUE)
+#plot(divisive.clust, main = "Divisivo", ylab="Similaridade" )
+```
+
+```{r, echo = FALSE}
+
+#grupos1 <- cutree(divisive.clust, k=3) 
+
+#rect.hclust(ajusteh, k=4, border="red")
+# Representa??o gr?fica da solu??o com 4 grupos
+
+#clusplot(df2, grupos1, color=TRUE, shade=TRUE,
+         #labels=2, lines=0, main= '(k=3)')
+```
+
+```{r, echo = FALSE}
+#------------ AGGLOMERATIVE CLUSTERING ------------#
+# I am looking for the most balanced approach
+# Complete linkages is the approach that best fits this demand - I will leave only this one here, don't want to get it cluttered# complete
+aggl.clust.c <- hclust(dista2, method = "complete")
+plot(aggl.clust.c,
+     main = "Agglomerative, complete linkages")
+```
+
+
+```{r, echo = FALSE}
+
+grupos2 <- cutree(aggl.clust.c, k=3) 
+
+#rect.hclust(ajusteh, k=4, border="red")
+# Representa??o gr?fica da solu??o com 4 grupos
+
+clusplot(df2, grupos2, color=TRUE, shade=TRUE,
+         labels=2, lines=0, main= '(k=3)')
+```
+
+
+
+```{r, include=TRUE}
+# Cluster stats comes out as list while it is more convenient to look at it as a table
+# This code below will produce a dataframe with observations in columns and variables in row
+# Not quite tidy data, which will require a tweak for plotting, but I prefer this view as an output here as I find it more comprehensive
+
+library(fpc)
+
+cstats.table <- function(dist, tree, k) 
+  {
+clust.assess <- c("cluster.number","n","within.cluster.ss","average.within","average.between",
+                  "wb.ratio","dunn2","avg.silwidth")
+clust.size <- c("cluster.size")
+stats.names <- c()
+row.clust <- c()
+
+output.stats <- matrix(ncol = k, nrow = length(clust.assess))
+cluster.sizes <- matrix(ncol = k, nrow = k)
+
+for(i in c(1:k))
+  {
+  row.clust[i] <- paste("Cluster-", i, " size")
+}
+for(i in c(2:k))
+  {
+  stats.names[i] <- paste("Test", i-1)
+  
+  for(j in seq_along(clust.assess)){
+    output.stats[j, i] <- unlist(cluster.stats(d = dist, clustering = cutree(tree, k = i))[clust.assess])[j]
+  }
+  
+  for(d in 1:k) {
+    cluster.sizes[d, i] <- unlist(cluster.stats(d = dist, clustering = cutree(tree, k = i))[clust.size])[d]
+    dim(cluster.sizes[d, i]) <- c(length(cluster.sizes[i]), 1)
+    cluster.sizes[d, i]
+    
+  }
+}
+
+output.stats.df <- data.frame(output.stats)
+
+cluster.sizes <- data.frame(cluster.sizes)
+cluster.sizes[is.na(cluster.sizes)] <- 0
+
+rows.all <- c(clust.assess, row.clust)
+# rownames(output.stats.df) <- clust.assess
+output <- rbind(output.stats.df, cluster.sizes)[ ,-1]
+colnames(output) <- stats.names[2:k]
+rownames(output) <- rows.all
+
+is.num <- sapply(output, is.numeric)
+output[is.num] <- lapply(output[is.num], round, 2)
+output
+}
+
+#cluster stats for aglomerative/divise
+stats.df.aggl <-cstats.table(dista2, aggl.clust.c, 8) #complete linkages looks like the most balanced approach
+stats.df.aggl
+
+
+```
+
+```{r, echo = FALSE}
+# Divisive clustering
+#Elbow
+library(ggplot2)# Elbow
+#ggplot(data = data.frame(t(cstats.table(dista2, divisive.clust, 15))), 
+  #aes(x=cluster.number, y=within.cluster.ss)) + 
+  #geom_point()+
+  #geom_line()+
+  #ggtitle("Agrupamento divisivo") +
+  #labs(x = "Num. de clusters", y = "soma dos quadrados dentro dos clusters") +
+  #theme(plot.title = element_text(hjust = 0.5))
+```
+
+```{r, echo = FALSE}
+
+
+# Agglomerative clustering,provides a more ambiguous picture
+ggplot(data = data.frame(t(cstats.table(dista2, aggl.clust.c, 15))), 
+  aes(x=cluster.number, y=within.cluster.ss)) + 
+  geom_point()+
+  geom_line()+
+  ggtitle("Agrupamento aglomerativo") +
+  labs(x = "Num. de clusters", y = "Soma dos quadrados dentro dos clusters") +
+  theme(plot.title = element_text(hjust = 0.5))
+```
+
+```{r, echo=FALSE}
+# Silhouette divise method
+#ggplot(data = data.frame(t(cstats.table(dista2, divisive.clust, 15))), 
+  #aes(x=cluster.number, y=avg.silwidth)) + 
+  #geom_point()+
+  #geom_line()+
+  #ggtitle("Agrupamento divisivo") +
+  #labs(x = "Num.de clusters", y = "Largura média da silhueta") +
+  #theme(plot.title = element_text(hjust = 0.5))
+```
+
+
+```{r ,echo=FALSE}
+# Silhouette aglomerative method
+ggplot(data = data.frame(t(cstats.table(dista2, aggl.clust.c, 15))), 
+  aes(x=cluster.number, y=avg.silwidth)) + 
+  geom_point()+
+  geom_line()+
+  ggtitle(" ") +
+  labs(x = "Num. de clusters", y = "Largura média da silhueta") +
+  theme(plot.title = element_text(hjust = 0.5))
+```
+
+
+```{r}
+library("ggplot2")
+library("reshape2")
+library("purrr")
+library("dplyr")
+library("dendextend")
+
+# let's start with a dendrogram
+dendro <- as.dendrogram(aggl.clust.c)
+
+dendro.col <- dendro %>%
+  set("branches_k_color", k = 3, value =   c("deeppink1", "royalblue2", "gold3", "darkslategray3", "darkcyan", "cyan3", "pink")) %>%
+  
+  set("branches_lwd", 0.6) %>%
+    set("labels_colors", 
+      value = c("darkslategray")) %>% 
+  set("labels_cex", 0.5)
+ggd1 <- as.ggdend(dendro.col)
+ggplot(ggd1, theme = theme_minimal()) +
+  labs(x = "Num. de observações", y = "Nível de similaridade", title = "k = 3")
+```
+
+
+```{r, include = TRUE}
+# Radial plot looks less cluttered (and cooler)
+ggplot(ggd1, labels = T) + 
+  scale_y_reverse(expand = c(0.2, 0)) +
+  coord_polar(theta="x")
+```
+
+```{r, echo = FALSE}
+# Time for the heatmap
+# the 1st step here is to have 1 variable per row
+# factors have to be converted to characters in order not to be dropped
+clust.num <- cutree(aggl.clust.c, k = 3)
+
+df2.cl <- cbind(c(1:length(df2$A2)), df2, clust.num)
+names(df2.cl)[1]<-"id.s"
+
+# Time for the heatmap
+# the 1st step here is to have 1 variable per row
+# factors have to be converted to characters in order not to be dropped
+
+cust.long <- melt(data.frame(lapply(df2.cl, as.character), stringsAsFactors=FALSE), 
+                  id = c("id.s", "clust.num"), factorsAsStrings=T)
+
+cust.long.q <- cust.long %>%
+  group_by(clust.num, variable, value) %>%
+  mutate(count = n_distinct(id.s)) %>%
+  distinct(clust.num, variable, value, count)
+
+# heatmap.c will be suitable in case you want to go for absolute counts - but it doesn't tell much to my taste
+
+heatmap.c <- ggplot(cust.long.q, aes(x = clust.num, y =factor(value, 
+                              levels = c("[18,29)","[29,39)","[39,49)","[49,60)","[60,100)",
+                            "Feminino","Masculino",                                                                                           "Muito ruim", "Ruim","Regular","Bom","Muito bom",
+                            "Não pratico","1 a 2 dias", "3 a 4 dias", "5 ou mais dias",
+                            "Raramente ou nunca", "1 a 2 dias", "3 a 4 dias", "5 ou mais dias","Todos os dias "), ordered = T))) +
+  
+geom_tile(aes(fill = count)) +
+
+scale_fill_gradient2(low = "darkslategray1", mid = "yellow", high = "turquoise4")
+
+# calculating the percent of each factor level in the absolute count of cluster members
+cust.long.p <- cust.long.q %>%
+  group_by(clust.num, variable) %>%
+  mutate(perc = count / sum(count)) %>%
+  arrange(clust.num)
+
+heatmap.p <- ggplot(cust.long.p, aes(x = clust.num, y = factor(value, 
+                                            levels = c("[18,29)","[29,39)","[39,49)","[49,60)","[60,100)",
+                                              "Feminino","Masculino",                                                                                           "Muito ruim", "Ruim","Regular","Bom","Muito bom",
+                                              "Não pratico","1 a 2", "3 a 4", "5 ou mais",
+                                              "Raramente ou nunca", "1 a 2 dias", "3 a 4 dias", "5 ou mais dias","Todos os dias "), ordered = T))) +
+  
+geom_tile(aes(fill = perc), alpha = 0.85)+
+  labs(title = " ", x = " N. Cluster", y = NULL) +
+  geom_hline(yintercept = 5.5) + 
+  geom_hline(yintercept = 7.5) + 
+  geom_hline(yintercept = 12.5) + 
+  geom_hline(yintercept = 16.5) + 
+  geom_hline(yintercept = 21.5) + 
+  scale_fill_gradient2(low = "darkslategray1", mid = "yellow", high = "turquoise4")
+
+heatmap.p
+
+```
+
+
+```{r, include = FALSE}
+#Tabela 1 usando  o pacote table1
+#Rótulo das variaveis na tabela 1
+
+label(df2.cl$A1) <- "Faixa etária"
+label(df2.cl$A2) <- "Sexo" # funcao label da table1
+label(df2.cl$B2) <- "Estado de saúde em 2022"
+label(df2.cl$C5) <- "Atividade física"
+label(df2.cl$D4) <- "Consumo de frutas, verduras e legumes"
+
+```
+
+
+```{r, echo = FALSE}
+#create table 1 with p value 
+table1(~ A1 + A2 + B2 + C5 + D4  | clust.num, rowlabelhead = "Cluster", data=df2.cl, overall = F, render.missing=NULL, extra.col=list(`Valor-p`=pvalue))
+```
+
+
+
+

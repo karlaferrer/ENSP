@@ -1,0 +1,571 @@
+---
+title: "ASSOCIAÇÃO ENTRE PLANO DE SAÚDE E MAMOGRAFIA EM MULHERES DE 50 A 69 ANOS NAS CAPITAIS BRASILEIRAS – UMA APLICAÇÃO DE REGRESSÃO MULTINONOMIAL UTILIZANDO INQUÉRITO COM PLANO AMOSTRAL COMPLEXO"
+author: "Karla Ferreira"
+date: "`r Sys.Date()`"
+output: word_document
+---
+
+```{r setup, echo = TRUE, message=FALSE, warning=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## 0. Objetivo e dicionário de variáveis
+O objetivo desse trabalho foi investigar se a posse de plano de saúde está associada à realização de mamografia para rastreamento do câncer de mama em mulheres com idade entre 50 e 69 anos apartir de dados do Vigitel 2021.
+
+Dicionario de variáveis:
+
+q6 - idade (anos)
+q7 - sexo
+civil - estado conjugal atual
+q8a - escolaridade
+q35 - bebida alcoólica
+q79a - papanicolau ja fez
+q80 - frequencia
+q81 mamografia
+q88 - plano de saude
+q82- tempo mamografia
+fumante - fumante
+depressao - depressao 
+inativo - Inatividade fisica
+pesorake - peso pós estratificacao
+
+## 1. Leitura do banco de dados
+```{r leitura  }
+# 0. Leitura do banco de dados
+library(readxl)
+df <- read_xls("Vigitel-2021-peso-rake.xls", col_types = "text")
+
+```
+
+## 2. Organização das variáveis para análise
+
+```{r organiza, echo=FALSE}
+#Subset variveis a serem usadas
+myvars<- c("cidade", "q6","q7", "civil", "q8a","q35",
+           "q79a","q80","q81","q82", "q88",
+           "fumante", "inativo" , "depressao" ,"pesorake")
+
+df2<-df[myvars]
+
+# Reorganização das variaveis
+df2[,myvars] <- lapply(df2[,myvars] , factor)
+df2$q6<-as.numeric(df2$q6)
+df2$pesorake <- as.numeric(df2$pesorake)
+
+#separar mulheres a partir de 49 anos
+df2<-subset(df2, q7=="2")
+df2<-subset(df2, q6>49 & q6<70)
+
+#criar uma variavel para regiao 
+library(DescTools) 
+df2$regiao <- DescTools::Recode(df2$cidade,
+                     "Norte" = c(2,4,12,14,16,18,20),
+                     "Nordeste" = c(1,9,11,13,15,19,22,23,25),
+                     "Sudeste" = c(3,21,24,26),
+                     "Sul" = c(7,8,17),
+                     "Centro-Oeste" = c(5,6,10,27))
+
+#Analise descritiva peliminar
+summary(df2)
+
+#raridade do evento
+library(descr)
+freq(df2$q82)
+
+# Analisando dados faltantes
+library(finalfit)
+df2 %>%
+  ff_glimpse(myvars)
+
+#Recategorizar variaveis
+
+#faixa etaria
+df2$fx_etaria <- cut(df2$q6, breaks = c(49, 59, 69,100), right = FALSE)
+
+#civil - casado sim, nao
+df2$casado <- DescTools::Recode(df2$civil,
+                     "Sim" = c("2","3"),
+                     "Não" = c("1","4","5","888"))
+
+#escolaridade
+df2$escol <- DescTools::Recode(df2$q8a,
+                    "Nunca estudou" = "8",
+                    "Primário" = c("1","2","3","4"),
+                    "Médio" = "5",
+                    "Superior ou mais" = c("6","7"),
+                    "Não sabe" = "777",
+                    "Não quis informar" = "888")
+
+#ensino superior
+df2$superior <- DescTools::Recode(df2$q8a,
+                    "Sim" = c("6","7"),
+                    "Não" = c("1","2","3","4","5","8", "777","888"))
+
+#plano de saude
+df2$plano <- DescTools::Recode(df2$q88,
+                    "Sim" = c("1","2"),
+                    "Não" = c("3","888"))
+
+#inativa
+df2$inativo <- DescTools::Recode(df2$inativo,
+                                  "Não" = "0",
+                                  "Sim" = "1")
+
+#depressao
+df2$depressao <- DescTools::Recode(df2$depressao,
+                                   "Não" = "0",
+                                   "Sim" = "1")
+
+
+#Dicotomizar  mamografia
+df2$mam <- as.factor(ifelse(df2$q81== 1, "1","0"))
+
+#Dicotomizar papanicolau
+df2$papa <- as.factor(ifelse(df2$q79a== 1, "Sim","Não"))
+
+#Pegar apenas quem fez mamografia
+df2<- subset(df2, mam == "1")
+
+#mamografia ultimos dois anos
+df2$mam2 <- DescTools::Recode(df2$q82,
+                              "Até 2" = c("1","2"),
+                              "Entre 2 e 5" = c("3","4"),
+                              "Mais de 5" = c("5","777", "888"))
+
+names(df2)<-c("cidade","idade", "sexo" ,"civil", "escolaridade", "alcool",  
+              "papanicolau","freq_papanicolau", "mamografia", "t_mamograf",
+              "plano_saude",  "fumante",  "inativa",  "depressao" ,"pesorake",
+              "regiao", "fx_etaria", "casada", "escol", "superior", "plano",
+              "mam", "papa" , "mam2") 
+
+```
+
+## 3. Análise descritiva sem plano amostral
+
+3.1 Histograma - Idade
+
+```{r}
+#Análise de variável quantitativa idade
+hist(df2$idade, nclass=20, col='coral1',main="Idade",
+xlim=c(49,70), border="white")
+#teste de normalidade
+#shapiro.test(df2$idade)
+#A variavel idade não possui distribuição normal
+```
+
+3.2 Tabela 1 - sem plano amostral
+
+```{r desc_s}
+library(table1)
+#Labels para a tabela
+label(df2$regiao) <- "Região"
+label(df2$idade) <- "Idade"
+label(df2$casada) <- "Casada"
+label(df2$superior) <- "Nível superior"
+label(df2$papa) <- "Já realizou papanicolau"
+label(df2$depressao) <- "Depressão"
+label(df2$inativa) <- "Inativade física"
+label(df2$plano) <- "Plano de saúde"
+
+library(finalfit)
+explanatory = c("regiao", "idade",  "casada",
+               "superior","papa","depressao", "inativa", "plano")
+dependent = "mam2"
+df2 %>%
+summary_factorlist(dependent, explanatory, p = FALSE, cont = "median",
+na_include = FALSE,column = TRUE, total_col = FALSE) -> t
+
+library(knitr)
+kable(t)
+```
+
+
+## 4. Modelos brutos sem plano amostral
+```{r butos_sem}
+#Modelos brutos
+
+library(nnet)
+library(gtsummary)
+#Regiao
+mod_regiao <- multinom(mam2 ~ regiao, data = df2)
+#resultado
+tbl_regression(mod_regiao, exponentiate = TRUE)
+summary(mod_regiao)
+
+#idade
+mod_idade <- multinom(mam2 ~ idade, data = df2)
+#resultado
+tbl_regression(mod_idade, exponentiate = TRUE)
+summary(mod_idade)
+
+#casada
+mod_casada <- multinom(mam2 ~ casada, data = df2)
+#resultado
+tbl_regression(mod_casada, exponentiate = TRUE)
+summary(mod_casada)
+
+#superior
+mod_superior <- multinom(mam2 ~ superior, data = df2)
+#resultado
+tbl_regression(mod_superior, exponentiate = TRUE)
+summary(mod_superior)
+
+#depressao
+mod_depressao <- multinom(mam2 ~ depressao, data = df2)
+#resultado
+tbl_regression(mod_depressao, exponentiate = TRUE)
+summary(mod_depressao)
+
+#inativa
+mod_inativa <- multinom(mam2 ~ inativa, data = df2)
+#resultado
+tbl_regression(mod_inativa, exponentiate = TRUE)
+summary(mod_inativa)
+
+#papanicolau
+#mod_papa <- multinom(mam2 ~ papa, data = df2)
+#resultado
+#tbl_regression(mod_papa, exponentiate = TRUE)
+#summary(mod_papa)
+#papanicolau e possivel colizora e por isso
+#nao foi selecionada para controle
+
+#plano
+mod_plano <- multinom(mam2 ~ plano, data = df2)
+#resultado
+tbl_regression(mod_plano, exponentiate = TRUE)
+summary(mod_plano)
+
+
+#selecionar variaveis com p-value <0,2 em pelo menos uma das categorias
+#sai regiao e depressao
+
+```
+
+## 4.1 Seleção de variáveis - Modelo  Lasso
+```{r}
+#Métodos de regularizacao
+### Para a aplicacao dos metodos de regularizacao, vamos usar todas as 
+### covariaveis, exceto pedigree. 
+
+#mamografia ultimos dois anos - dicotomizada
+df2$mam3 <- DescTools::Recode(df2$t_mamograf,
+                              "Até 2" = c("1","2"),
+                              "Mais de 2" = c("3","4", "5","777", "888"))
+
+myvars5<-c("mam3","idade", "regiao", "plano","civil","escol", "alcool",
+           "papa", "fumante" ,"casada","superior", "depressao",
+           "inativa")
+df5<-df2[myvars5]
+
+x <- model.matrix(mam3 ~ regiao + idade + casada + superior 
+                  + depressao + inativa + plano, 
+                  data = df5)[, -1]
+
+### Matriz de covariaveis. Observe a exclusao da primeira coluna, que corresponde a
+### coluna de uns (referente ao intercepto), que nao deve ser incluida.
+
+y <- as.numeric(df5$mam3)
+### Convertendo a variavel resposta para um vetor numerico. Sera necessario
+### para o processo de validacao cruzada.
+
+require(glmnet)
+g1 <- glmnet(x, y, family = 'multinomial', type.multinomial = "grouped")
+
+plot(g1, xvar = "lambda", label = TRUE, type.coef = "2norm")
+
+cvfit <- cv.glmnet(x, y, family = "multinomial", type.multinomial = "grouped")
+plot(cvfit)
+
+predict(cvfit, newx = x[1:10,], s = "lambda.min", type = "class")
+
+### Usando a funcao glmnet, vamos determinar o valor de lambda que produz
+### menor deviance, estimado via validacao cruzada.
+
+log(cvfit$lambda.min)
+log(cvfit$lambda.1se)
+
+### Lambdas otimos.
+betas.lasso<-coef(g1, c(cvfit$lambda.min, cvfit$lambda.1se))
+betas.lasso
+kable(as.matrix(betas.lasso$`1`))
+kable(as.matrix(betas.lasso$`2`))
+#kable(as.matrix(betas.lasso[,2]))
+
+### Modelo ajustado com o lambda otimo.
+
+```
+
+
+## 5. Regressão múltipla sem plano amostral 
+
+```{r}
+#Regressao politomica sem desenho amostral
+
+#install.packages("nnet")
+library(nnet)
+modelo <- multinom(mam2 ~ idade + casada + superior
+                   + inativa + plano, data = df2)
+
+# Resumo dos resultados do modelo
+summary(modelo)
+
+c_modelo<-coef(modelo)
+se_modelo<-sqrt(diag(vcov(modelo))) #se
+kable(c_modelo)
+kable(se_modelo)
+
+tbl_regression(modelo, exponentiate = TRUE)
+
+or_modelo<-round(exp(coef(modelo)),2)
+
+ic_modelo<-round(exp(confint(modelo)),2)
+
+kable(or_modelo)
+kable(ic_modelo)
+
+
+
+#kable(as.matrix(betas.lasso))
+
+```
+
+
+## 6.Declarar plano amostral
+```{r plano}
+# Chamando a biblioteca survey
+require(survey)
+
+# Definindo o desenho
+BR.svy <- svydesign( id=~1, strata =NULL, fpc=NULL,
+                     weights = ~pesorake, data=df2)
+
+# id -- variavel que define os clusters
+# ~1 significa que que não tem clusters
+# strata -- variável que define os estratos
+# fpc -- correção de população finita, aponta para a
+# variável do banco com o tamanho da população
+# weights -- pesos amostrais
+# data -- data frame com os dados gerados
+
+# Estimando o total de mulheres q fizeram  mamografia na populacao
+svytotal(~mam2, BR.svy)
+
+# Estimando prevalência de mulheres que fizeram exame - 84%
+svymean(~mam2, BR.svy) 
+```
+
+
+## 7. Análise descritiva com plano amostral 
+
+```{r}
+# Tabela 1 com pesos da amostra
+require(tableone)
+#Labels para a tabela
+label(df2$plano) <- "Plano de saúde"
+label(df2$regiao) <- "Região"
+label(df2$idade) <- "Idade"
+label(df2$casada) <- "Casada"
+label(df2$superior) <- "Nível superior"
+label(df2$depressao) <- "Depressão"
+label(df2$depressao) <- "Depressão"
+label(df2$inativa) <- "Inativade física"
+
+tab2<- svyCreateTableOne(vars = c("regiao","idade","casada",
+                                  "superior","papa" ,"depressao",
+                                  "inativa", "plano"), 
+                         strata = "mam2",test = FALSE, data = BR.svy)
+
+tabela1sw<-print (tab2, showAllLevels = TRUE,nonnormal = "idade")
+
+#kableone(tab2)
+kable (tabela1sw)
+
+```
+
+##8. Modelos simples com plano amostral
+
+```{r}
+require(svyVGAM)
+#Regiao
+regiao_svy<-svy_vglm(mam2 ~ regiao, family=multinomial(refLevel = 1),
+              design=BR.svy)
+summary (regiao_svy)
+#regiao sai - pelo menos um coef pvalue >0,2 nos dois logitos
+
+#plano
+plano_svy<-svy_vglm(mam2 ~ plano, family=multinomial(refLevel = 1),
+              design=BR.svy)
+summary (plano_svy)
+
+#idade
+idade_svy<-svy_vglm(mam2 ~ idade, family=multinomial(refLevel = 1),
+              design=BR.svy)
+summary (idade_svy)
+
+#casada
+casada_svy<-svy_vglm(mam2 ~ casada, family=multinomial(refLevel = 1),
+              design=BR.svy)
+summary (casada_svy)
+
+#superior
+superior_svy<-svy_vglm(mam2 ~ superior, family=multinomial(refLevel = 1),
+              design=BR.svy)
+summary (superior_svy)
+
+#depressao
+depressao_svy<-svy_vglm(mam2 ~ depressao, family=multinomial(refLevel = 1),
+              design=BR.svy)
+summary (depressao_svy)
+
+#inativa
+inativa_svy<-svy_vglm(mam2 ~ inativa, family=multinomial(refLevel = 1),
+              design=BR.svy)
+summary(inativa_svy)
+
+#Resultados - OR IC
+
+IC_reg_s<-round(exp(confint(regiao_svy)),2)
+IC_ida_s<-round(exp(confint(idade_svy)),2)
+IC_cas_s<-round(exp(confint(casada_svy)),2)
+IC_sup_s<-round(exp(confint(superior_svy)),2)
+IC_dep_s<-round(exp(confint(depressao_svy)),2)             
+IC_ina_s<-round(exp(confint(inativa_svy)),2)   
+IC_pla_s<-round(exp(confint(plano_svy)),2)   
+
+#Resultados - Odds e IC
+
+kable(round(exp(regiao_svy$coef),2))
+kable(IC_reg_s)
+
+kable(round(exp(idade_svy$coef),2))
+kable(IC_ida_s)
+
+kable(round(exp(casada_svy$coef),2))
+kable(IC_cas_s)
+
+kable(round(exp(superior_svy$coef),2))
+kable(IC_sup_s)
+
+kable(round(exp(depressao_svy$coef),2))
+kable(IC_dep_s)
+
+kable(round(exp(inativa_svy$coef),2))
+kable(IC_ina_s)
+
+kable(round(exp(plano_svy$coef),2))
+kable(IC_pla_s)
+
+```
+
+
+##9.Modelo multiplo com plano amostral
+
+```{r}
+require(svyVGAM)
+modelo_svy<-svy_vglm(mam2 ~ plano + idade + casada + superior
+                  + inativa, family=multinomial(refLevel = 1),
+              design=BR.svy)
+summary (modelo_svy)
+modelo_svy
+
+#coeficientes e erro padra
+c_mod_svy<-coef(modelo_svy)
+se_mod_svy<-sqrt(diag(vcov(modelo_svy))) #se
+kable(c_mod_svy)
+kable(se_mod_svy)
+
+#OR e Ics
+OR_mod_svy<- round(exp(c_mod_svy),2)
+IC_mod_svy<-round(exp(confint(modelo_svy)),2)
+
+kable(OR_mod_svy)
+kable(IC_mod_svy)
+
+```
+
+## 10. Efeitos ajustados plano de saúde 
+```{r}
+#Grafico de OR alternativo
+## Load libraries
+library(gridExtra)
+library(ggplot2)
+
+## data frame
+dat <- data.frame(
+Index = c(1, 2), ## This provides an order to the data
+label = c("Entre 2 e 5 anos", 
+          "Mais de 5 anos"),
+OR = c(1.79,2.49),
+LL = c(1.53,2.04),
+UL = c(2.09,3.04)
+)
+dat
+## Plot forest plot
+plot1 <- ggplot(dat, aes(y = Index, x = OR)) +
+geom_point(shape = 18, size = 7) +
+geom_errorbarh(aes(xmin = LL, xmax = UL), height = 0.25) +
+geom_vline(xintercept = 1, color = "red", linetype = "dashed", cex = 1,
+alpha = 0.5) +
+scale_y_continuous(name = "", breaks=1:2, labels = dat$label, trans =
+"reverse") +
+xlab("Odds Ratio (95% CI)") +
+ylab(" ") +
+theme_bw() +
+theme(panel.border = element_blank(),
+panel.background = element_blank(),
+panel.grid.major = element_blank(),
+panel.grid.minor = element_blank(),
+axis.line = element_line(colour = "black"),
+axis.text.y = element_text(size = 12, colour = "black"),
+axis.text.x.bottom = element_text(size = 12, colour = "black"),
+axis.title.x = element_text(size = 12, colour = "black"))
+plot1
+```
+
+
+## 11. Qualidade do ajuste 
+```{r}
+#logLik modelo - log-likelihood
+modelo
+logLik(modelo)
+
+modelo_svy
+#AIC modelo_svy
+(2*10 )- (2*-12921755 )
+
+
+#Hosmer-Lemeshow Tests for Logistic Regression Models
+## Multinomial model
+# with nnet
+#remotes::install_github("matthewjay15/generalhoslem")
+library(generalhoslem)
+logitgof(df2$mam2, fitted(modelo))
+
+#Grafico - Hosmer e Lemeshow
+teste <- logitgof(df2$mam2, fitted(modelo))
+teste_banco <- data.frame(obs=teste$observed[,2], esp=teste$expected[,2])
+library(ggplot2)
+ggplot(teste_banco, aes(x=obs, y=esp)) +
+geom_point() +
+geom_smooth() +labs(x="Observado",y="Esperado")+
+geom_abline(intercept=0, slope=1, size=0.5)+theme_bw()+theme(panel.grid
+=element_blank()) # linha de referência
+
+#Grafico envelope simulado
+library(hnp)
+hnp(modelo, sim= 19,resid.type="deviance", conf= 1, how.many.out = TRUE,
+    print.on = TRUE, paint.out = TRUE, pch=16)
+
+```
+
+
+```{r}
+#Citar bibliotecas - exemplo
+print(citation("survey"), bibtex=TRUE)
+```
+
+
+
+
+
